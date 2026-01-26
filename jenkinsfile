@@ -1,46 +1,30 @@
 pipeline {
     agent any
 
-    environment {
-        // Yahan apni Repo ka URL dalein
-        REPO_URL = 'https://github.com/YourUser/Your-Node-Repo.git'
-        APP_SERVER = 'ubuntu@172.31.29.207'
-    }
-
     stages {
-        stage('Checkout & Setup') {
+
+        stage('Checkout Code (SCM)') {
             steps {
-                script {
-                    // Yeh command 'Your-Node-Repo.git' se 'Your-Node-Repo' nikal legi
-                    env.APP_NAME = sh(script: "basename ${REPO_URL} .git", returnStdout: true).trim()
-                    git branch: 'main', url: "${REPO_URL}"
-                }
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t total:latest ."
             }
         }
 
         stage('Deploy to EC2') {
             steps {
-                script {
-                    // Files ko App Server par bhejna
-                    sh "scp -r . ${APP_SERVER}:/tmp/${env.APP_NAME}"
-
-                    // Docker Build aur Run (Port 3000 par kyunki aapne EXPOSE 3000 kiya hai)
+                sshagent(['ec2-key']) {
                     sh """
-                    ssh ${APP_SERVER} <<EOF
-                        cd /tmp/${env.APP_NAME}
-                        
-                        # Purana container stop aur remove karein
-                        sudo docker rm -f ${env.APP_NAME} || true
-                        
-                        # Naya image build aur run
-                        sudo docker build -t img-${env.APP_NAME} .
-                        
-                        # Note: Host port 3000 ko container port 3000 se map kiya hai
-                        sudo docker run -d --name ${env.APP_NAME} -p 3000:3000 img-${env.APP_NAME}
-                        
-                        # Cleanup
-                        rm -rf /tmp/${env.APP_NAME}
-EOF
+                    ssh ubuntu@172.31.29.207 '
+                        docker run -d \
+                          --name total \
+                          -p 3000:3000 \
+                          total:latest
+                    '
                     """
                 }
             }
