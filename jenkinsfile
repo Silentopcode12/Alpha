@@ -1,32 +1,33 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "tango"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+    }
+
     stages {
 
-        stage('Checkout Code (SCM)') {
+        stage('Checkout') {
             steps {
-                checkout scm
+                git 'https://github.com/Silentopcode12/Alpha.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Image with Tag') {
             steps {
-                sh "docker build -t total:latest ."
+                sh """
+                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                """
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy with Docker Compose') {
             steps {
-                sshagent(['ec2-key']) {
-                    sh """
-                    ssh ubuntu@172.31.29.207 '
-                        docker run -d \
-                          --name total \
-                          -p 3000:3000 \
-                          total:latest
-                    '
-                    """
-                }
+                sh """
+                export IMAGE_TAG=${IMAGE_TAG}
+                docker-compose up -d
+                """
             }
         }
     }
