@@ -3,30 +3,29 @@ pipeline {
 
     environment {
         IMAGE_NAME = "tango"
-        IMAGE_TAG  = "${BUILD_NUMBER}"
+        TAG = "${BUILD_NUMBER}"
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                git 'https://github.com/Silentopcode12/Alpha.git'
+                git branch: 'main',
+                    url: 'https://github.com/Silentopcode12/Alpha.git'
             }
         }
 
-        stage('Build Image with Tag') {
+        stage('Build Image') {
             steps {
-                sh """
-                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                """
+                sh "docker build -t ${IMAGE_NAME}:${TAG} ."
             }
         }
 
-        stage('Deploy with Docker Compose') {
+        stage('Deploy with Compose') {
             steps {
                 sh """
-                export IMAGE_TAG=${IMAGE_TAG}
-                docker-compose up -d
+                  TAG=${TAG} docker-compose down || true
+                  TAG=${TAG} docker-compose up -d
                 """
             }
         }
