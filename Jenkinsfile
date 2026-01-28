@@ -21,10 +21,9 @@ pipeline {
             }
         }
 
-        stage('Deploy with Compose') {
+        stage('Deploy (Tag Based Replace)') {
             steps {
                 sh """
-                  TAG=${TAG} docker-compose down || true
                   TAG=${TAG} docker-compose up -d
                 """
             }
