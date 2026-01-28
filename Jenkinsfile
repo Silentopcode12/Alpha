@@ -21,11 +21,11 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy with Compose') {
             steps {
                 sh """
-                  export TAG=${TAG}
-                  docker compose up -d
+                  TAG=${TAG} docker-compose down || true
+                  TAG=${TAG} docker-compose up -d
                 """
             }
         }
